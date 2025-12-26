@@ -39,7 +39,9 @@ public class SocketWriterService : ISocketWriterService
 
                 if (_socketManagerService.Socket is not null && message is not null)
                 {
-                    var messageWithPrependedLengthBytes = GetMessage(message);
+                    var messageWithPrependedLengthBytes = GetMessageWithPrependedLengthBytes(
+                        message
+                    );
                     await _socketManagerService.Socket.SendAsync(messageWithPrependedLengthBytes);
                 }
             }
@@ -50,7 +52,7 @@ public class SocketWriterService : ISocketWriterService
         }
     }
 
-    private byte[] GetMessage(string message)
+    private byte[] GetMessageWithPrependedLengthBytes(string message)
     {
         var messageBytes = Encoding.UTF8.GetBytes(message);
         var messageLengthBytes = BitConverter.GetBytes(message.Length);
