@@ -13,7 +13,11 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection ConfigureAppServices(IServiceCollection services)
     {
-        services.AddHostedService<ClientService>();
+        services.AddHostedService<SocketService>();
+
+        services.AddSingleton<ISocketWriterService, SocketWriterService>();
+        services.AddSingleton<ISocketReaderService, SocketReaderService>();
+        services.AddSingleton<ISocketManagerService, SocketManagerService>();
 
         return services;
     }

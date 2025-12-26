@@ -3,4 +3,4 @@ using TcpClient.Extensions;
 
 var builder = Host.CreateDefaultBuilder(args);
 
-builder.ConfigureServices().ConfigureLogging().Build().Run();
+await builder.ConfigureServices().ConfigureLogging().Build().ConfigureHost();
