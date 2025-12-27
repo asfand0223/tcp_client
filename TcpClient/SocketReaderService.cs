@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 public interface ISocketReaderService
 {
-    public Task RunAsync(Socket socket);
+    public Task ReceiveAsync(Socket socket, CancellationToken cancellationToken);
 }
 
 public class SocketReaderService : ISocketReaderService
@@ -19,11 +19,11 @@ public class SocketReaderService : ISocketReaderService
         Logger = logger;
     }
 
-    public async Task RunAsync(Socket socket)
+    public async Task ReceiveAsync(Socket socket, CancellationToken cancellationToken)
     {
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
-            var headerBuffer = await ReadExactAsync(socket, HEADER_SIZE);
+            var headerBuffer = await ReceiveExactAsync(socket, HEADER_SIZE, cancellationToken);
             if (headerBuffer is null)
             {
                 return;
@@ -31,7 +31,7 @@ public class SocketReaderService : ISocketReaderService
 
             int messageLength = BitConverter.ToInt32(headerBuffer, 0);
 
-            var messageBuffer = await ReadExactAsync(socket, messageLength);
+            var messageBuffer = await ReceiveExactAsync(socket, messageLength, cancellationToken);
             if (messageBuffer is null)
             {
                 return;
@@ -42,7 +42,11 @@ public class SocketReaderService : ISocketReaderService
         }
     }
 
-    private async Task<byte[]?> ReadExactAsync(Socket socket, int bytesToRead)
+    private async Task<byte[]?> ReceiveExactAsync(
+        Socket socket,
+        int bytesToRead,
+        CancellationToken cancellationToken
+    )
     {
         int bytesRead = 0;
         var buffer = new byte[bytesToRead];
@@ -51,7 +55,8 @@ public class SocketReaderService : ISocketReaderService
         {
             int bytesReceived = await socket.ReceiveAsync(
                 buffer.AsMemory(bytesRead, bytesToRead - bytesRead),
-                SocketFlags.None
+                SocketFlags.None,
+                cancellationToken
             );
             if (bytesReceived == 0)
             {

@@ -9,6 +9,7 @@ public class SocketService : BackgroundService
 {
     private readonly ILogger<SocketService> _logger;
     private readonly ISocketReaderService _socketReaderService;
+    private readonly ISocketWriterService _socketWriterService;
     private readonly ISocketManagerService _socketManagerService;
 
     private Socket _clientSocket;
@@ -17,11 +18,13 @@ public class SocketService : BackgroundService
     public SocketService(
         ILogger<SocketService> logger,
         ISocketReaderService socketReaderService,
+        ISocketWriterService socketWriterService,
         ISocketManagerService socketManagerService
     )
     {
         _logger = logger;
         _socketReaderService = socketReaderService;
+        _socketWriterService = socketWriterService;
         _socketManagerService = socketManagerService;
 
         _clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -36,10 +39,11 @@ public class SocketService : BackgroundService
 
             _socketManagerService.Socket = _clientSocket;
 
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                await _socketReaderService.RunAsync(_clientSocket);
-            }
+            var receiveTask = _socketReaderService.ReceiveAsync(_clientSocket, cancellationToken);
+
+            var readInputTask = _socketWriterService.ReadInputAsync(cancellationToken);
+
+            await Task.WhenAll(receiveTask, readInputTask);
         }
         catch (SocketException ex) when (ex.SocketErrorCode == SocketError.OperationAborted)
         {

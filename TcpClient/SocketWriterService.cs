@@ -1,11 +1,12 @@
 namespace TcpClient;
 
+using System.Net.Sockets;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
 public interface ISocketWriterService
 {
-    public Task RunAsync();
+    public Task ReadInputAsync(CancellationToken cancellationToken);
 }
 
 public class SocketWriterService : ISocketWriterService
@@ -22,27 +23,38 @@ public class SocketWriterService : ISocketWriterService
         _socketManagerService = socketManagerService;
     }
 
-    public async Task RunAsync()
+    public async Task ReadInputAsync(CancellationToken cancellationToken)
     {
         try
         {
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 Console.WriteLine("Type to enter a message:");
                 var message = Console.ReadLine();
 
-                if (message == "quit")
+                if (message is not null)
                 {
-                    Console.WriteLine("quitting");
-                    break;
-                }
+                    if (message.ToLower() == "quit")
+                    {
+                        Console.WriteLine("quitting");
+                        try
+                        {
+                            _socketManagerService.Socket?.Shutdown(SocketShutdown.Both);
+                            _socketManagerService.Socket?.Close();
+                        }
+                        catch { }
+                        break;
+                    }
 
-                if (_socketManagerService.Socket is not null && message is not null)
-                {
-                    var messageWithPrependedLengthBytes = GetMessageWithPrependedLengthBytes(
-                        message
-                    );
-                    await _socketManagerService.Socket.SendAsync(messageWithPrependedLengthBytes);
+                    if (_socketManagerService.Socket is not null)
+                    {
+                        var messageWithPrependedLengthBytes = GetMessageWithPrependedLengthBytes(
+                            message
+                        );
+                        await _socketManagerService.Socket.SendAsync(
+                            messageWithPrependedLengthBytes
+                        );
+                    }
                 }
             }
         }
