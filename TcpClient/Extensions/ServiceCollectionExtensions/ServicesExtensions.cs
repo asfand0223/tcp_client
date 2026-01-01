@@ -17,7 +17,10 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<SocketProcessorService>();
 
         services.AddSingleton<IConsoleInputProcessorService, ConsoleInputProcessorService>();
+        services.AddSingleton<ISocketService, SocketService>();
+        services.AddSingleton<ISocketReceiverService, SocketReceiverService>();
         services.AddSingleton<ISocketWriterService, SocketWriterService>();
+        services.AddSingleton<IMessageHandlerService, MessageHandlerService>();
 
         return services;
     }
